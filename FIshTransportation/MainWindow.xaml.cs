@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using FIshTransportation.Scripts;
+using Test22.Scripts;
 
 namespace FIshTransportation
 {
@@ -17,9 +18,7 @@ namespace FIshTransportation
     /// </summary>
     public partial class MainWindow : Window
     {
-        private int transportTime;
-        private Fish fish;
-        private List<TemperatureRecord> temperatureRecords;
+        private int transportTime; // Переменная для хранения времени перевозки
 
         public MainWindow()
         {
@@ -28,18 +27,23 @@ namespace FIshTransportation
 
         private void CheckButton_Click(object sender, RoutedEventArgs e)
         {
-            fish = new Fish
+            try
             {
-                Type = ItemComboBox.Text,
-                MaxTemperature = int.Parse(MaxTempTextBox.Text),
-                MaxTime = int.Parse(MaxTimeTExtBox.Text),
-                MinTemperature = int.Parse(MinTempTextBox.Text),
-                MinTime = int.Parse(MinTimeTextBox.Text)
-            };
+                transportTime = int.Parse(TransportTimeTextBox.Text); // Сохраняем время перевозки
+                int minTemp = int.Parse(MinTempTextBox.Text);
+                int maxTemp = int.Parse(MaxTempTextBox.Text);
+                var temperatures = TemperatureInputTextBox.Text.Split(',').Select(int.Parse).ToArray();
 
-            // Проверка условий хранения
-            var report = CheckStorageConditions(temperatureRecords, fish);
-            DisplayReport(report);
+                var monitor = new TemperatureMonitor(transportTime, minTemp, maxTemp, temperatures);
+                var report = monitor.CheckConditions();
+
+                ResultTextBlock.Text = report;
+                SaveReportToFile(report);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка: {ex.Message}");
+            }
         }
 
         private void LoadFromFileButton_Click(object sender, RoutedEventArgs e)
@@ -52,7 +56,11 @@ namespace FIshTransportation
             if (openFileDialog.ShowDialog() == true)
             {
                 var (startTime, temperatures) = DataLoader.LoadDataFromFile(openFileDialog.FileName);
-                TemperatureInputTextBox.Text = string.Join(", ", temperatures); 
+                // Установите время перевозки (например, можно установить его на основе времени доставки)
+                // Здесь можно добавить логику для определения времени перевозки
+                TransportTimeTextBox.Text = "0"; // Установите значение по умолчанию или определите его
+                TemperatureInputTextBox.Text = string.Join(", ", temperatures); // Установите температуры
+                // Можно добавить логику для установки минимальной и максимальной температуры
             }
         }
 
@@ -63,12 +71,12 @@ namespace FIshTransportation
                 switch (selectedItem.Content.ToString())
                 {
                     case "Семга":
-                        MinTempTextBox.Text = "-3"; 
-                        MaxTempTextBox.Text = "5";   
+                        MinTempTextBox.Text = "-3"; // Минимальная температура для семги
+                        MaxTempTextBox.Text = "5";   // Максимальная температура для семги
                         break;
                     case "Минтай":
-                        MinTempTextBox.Text = "-10"; 
-                        MaxTempTextBox.Text = "-5";   
+                        MinTempTextBox.Text = "-10"; // Минимальная температура для минтая
+                        MaxTempTextBox.Text = "-5";   // Максимальная температура для минтая
                         break;
                 }
             }
@@ -81,96 +89,15 @@ namespace FIshTransportation
             MessageBox.Show($"Отчет сохранен в {filePath}");
         }
 
-        private List<Report> CheckStorageConditions(List<TemperatureRecord> records, Fish fish)
-        {
-            var report = new List<Report>();
-            DateTime startTime = DateTime.Parse(records.First().DateTime.ToString());
-            DateTime endTime = DateTime.Parse(records.Last().DateTime.ToString());
-            TimeSpan duration = endTime - startTime;
-
-            int maxViolationTime = 0;
-            int minViolationTime = 0;
-
-            for (int i = 0; i < records.Count; i++)
-            {
-                int temp = records[i].Temperature;
-                DateTime currentTime = DateTime.Parse(records[i].DateTime.ToString());
-
-                if (temp > fish.MaxTemperature)
-                {
-                    maxViolationTime++;
-                    if (maxViolationTime > fish.MaxTime)
-                    {
-                        report.Add(new Report
-                        {
-                            ViolationTime = currentTime,
-                            RequiredTemperature = fish.MaxTemperature,
-                            ActualTemperature = temp,
-                            Deviation = temp - fish.MaxTemperature
-                        });
-                    }
-                }
-                else
-                {
-                    maxViolationTime = 0; // Reset if within limits
-                }
-
-                if (temp < fish.MinTemperature)
-                {
-                    minViolationTime++;
-                    if (minViolationTime > fish.MinTime)
-                    {
-                        report.Add(new Report
-                        {
-                            ViolationTime = currentTime,
-                            RequiredTemperature = fish.MinTemperature,
-                            ActualTemperature = temp,
-                            Deviation = temp - fish.MinTemperature
-                        });
-                    }
-                }
-                else
-                {
-                    minViolationTime = 0; // Reset if within limits
-                }
-            }
-
-            return report;
-        }
-
-        private void DisplayReport(List<Report> report)
-        {
-            if (report.Count > 0)
-            {
-                NotificationTextBlock.Text = "Нарушения условий хранения зафиксированы.";
-                ReportDataGrid.ItemsSource = report;
-                SaveReportToFile(report);
-            }
-            else
-            {
-                NotificationTextBlock.Text = "Условия хранения соблюдены.";
-            }
-        }
-
-        private void SaveReportToFile(List<Report> report)
-        {
-            using (StreamWriter writer = new StreamWriter("Report.txt"))
-            {
-                foreach (var entry in report)
-                {
-                    writer.WriteLine($"{entry.ViolationTime} | Требуемая: {entry.RequiredTemperature} | Фактическая: {entry.ActualTemperature} | Отклонение: {entry.Deviation}");
-                }
-            }
-        }
-    
-
         private void NumericTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
+            // Проверка, что вводимое значение является числом
             e.Handled = !IsTextAllowed(e.Text);
         }
 
         private bool IsTextAllowed(string text)
         {
+            // Регулярное выражение для проверки, что текст состоит только из цифр
             Regex regex = new Regex("[^0-9]+");
             return !regex.IsMatch(text);
         }
@@ -190,6 +117,7 @@ namespace FIshTransportation
         {
             if (int.TryParse(MinTempTextBox.Text, out int value))
             {
+                // Здесь можно добавить дополнительные проверки для минимальной температуры, если необходимо
             }
         }
 
@@ -197,6 +125,7 @@ namespace FIshTransportation
         {
             if (int.TryParse(MaxTempTextBox.Text, out int value))
             {
+                // Здесь можно добавить дополнительные проверки для максимальной температуры, если необходимо
             }
         }
     }

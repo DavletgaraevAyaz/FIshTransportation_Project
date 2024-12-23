@@ -13,12 +13,6 @@ namespace FIshTransportation.Scripts
         public int ActualTemperature { get; set; }
         public int Deviation { get; set; }
 
-        public Report(DateTime violationTime, int requiredTemperature, int actualTemperature, int deviation)
-        {
-            ViolationTime = violationTime;
-            RequiredTemperature = requiredTemperature;
-            ActualTemperature = actualTemperature;
-            Deviation = deviation;
-        }
+        
     }
 }
