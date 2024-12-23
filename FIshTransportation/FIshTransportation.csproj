@@ -55,7 +55,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Scripts\DataLoader.cs" />
     <Compile Include="Scripts\Fish.cs" />
+    <Compile Include="Scripts\Report.cs" />
+    <Compile Include="Scripts\TemperatureRecord.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

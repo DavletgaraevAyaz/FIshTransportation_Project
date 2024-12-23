@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using FIshTransportation.Scripts;
 
 namespace FIshTransportation
 {
@@ -17,6 +18,8 @@ namespace FIshTransportation
     public partial class MainWindow : Window
     {
         private int transportTime;
+        private Fish fish;
+        private List<TemperatureRecord> temperatureRecords;
 
         public MainWindow()
         {
@@ -25,23 +28,18 @@ namespace FIshTransportation
 
         private void CheckButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            fish = new Fish
             {
-                transportTime = int.Parse(TransportTimeTextBox.Text);
-                int minTemp = int.Parse(MinTempTextBox.Text);
-                int maxTemp = int.Parse(MaxTempTextBox.Text);
-                var temperatures = TemperatureInputTextBox.Text.Split(',').Select(int.Parse).ToArray();
+                Type = ItemComboBox.Text,
+                MaxTemperature = int.Parse(MaxTempTextBox.Text),
+                MaxTime = int.Parse(MaxTimeTExtBox.Text),
+                MinTemperature = int.Parse(MinTempTextBox.Text),
+                MinTime = int.Parse(MinTimeTextBox.Text)
+            };
 
-                var monitor = new TemperatureMonitor(transportTime, minTemp, maxTemp, temperatures);
-                var report = monitor.CheckConditions();
-
-                ResultTextBlock.Text = report;
-                SaveReportToFile(report);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка: {ex.Message}");
-            }
+            // Проверка условий хранения
+            var report = CheckStorageConditions(temperatureRecords, fish);
+            DisplayReport(report);
         }
 
         private void LoadFromFileButton_Click(object sender, RoutedEventArgs e)
@@ -54,7 +52,6 @@ namespace FIshTransportation
             if (openFileDialog.ShowDialog() == true)
             {
                 var (startTime, temperatures) = DataLoader.LoadDataFromFile(openFileDialog.FileName);
-                TransportTimeTextBox.Text = "3";
                 TemperatureInputTextBox.Text = string.Join(", ", temperatures); 
             }
         }
@@ -87,8 +84,8 @@ namespace FIshTransportation
         private List<Report> CheckStorageConditions(List<TemperatureRecord> records, Fish fish)
         {
             var report = new List<Report>();
-            DateTime startTime = DateTime.Parse(records.First().DateTime);
-            DateTime endTime = DateTime.Parse(records.Last().DateTime);
+            DateTime startTime = DateTime.Parse(records.First().DateTime.ToString());
+            DateTime endTime = DateTime.Parse(records.Last().DateTime.ToString());
             TimeSpan duration = endTime - startTime;
 
             int maxViolationTime = 0;
@@ -97,7 +94,7 @@ namespace FIshTransportation
             for (int i = 0; i < records.Count; i++)
             {
                 int temp = records[i].Temperature;
-                DateTime currentTime = DateTime.Parse(records[i].DateTime);
+                DateTime currentTime = DateTime.Parse(records[i].DateTime.ToString());
 
                 if (temp > fish.MaxTemperature)
                 {
@@ -165,7 +162,7 @@ namespace FIshTransportation
                 }
             }
         }
-    }
+    
 
         private void NumericTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
