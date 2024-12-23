@@ -8,14 +8,14 @@ namespace Test22.Scripts
 {
     public class TemperatureMonitor
     {
-            private int transportTime;
         private int minTemp;
         private int maxTemp;
         private int[] temperatures;
+        private DateTime startTime;
 
-        public TemperatureMonitor(int transportTime, int minTemp, int maxTemp, int[] temperatures)
+        public TemperatureMonitor(DateTime startTime, int minTemp, int maxTemp, int[] temperatures)
         {
-            this.transportTime = transportTime;
+            this.startTime = startTime;
             this.minTemp = minTemp;
             this.maxTemp = maxTemp;
             this.temperatures = temperatures;
@@ -23,35 +23,45 @@ namespace Test22.Scripts
 
         public string CheckConditions()
         {
-            StringBuilder report = new StringBuilder();
-            List<string> violations = new List<string>();
+            List<string> reportLines = new List<string>();
+            TimeSpan totalMinViolation = TimeSpan.Zero;
+            TimeSpan totalMaxViolation = TimeSpan.Zero;
+
+            // Заголовок таблицы
+            reportLines.Add("Время\tФакт\tНорма\tОтклонение от нормы");
 
             for (int i = 0; i < temperatures.Length; i++)
             {
-                if (temperatures[i] > maxTemp)
+                DateTime currentTime = startTime.AddMinutes(i * 10);
+                int currentTemp = temperatures[i];
+
+                if (currentTemp < minTemp)
                 {
-                    violations.Add($"Нарушение: Температура {temperatures[i]}°C превышает максимальную ({maxTemp}°C) на минуте {i * 10}.");
+                    int deviation = minTemp - currentTemp;
+                    reportLines.Add($"{currentTime:dd.MM.yyyy HH:mm}\t{currentTemp}\t{minTemp}\t{deviation}");
+                    totalMinViolation += TimeSpan.FromMinutes(10);
                 }
-                else if (temperatures[i] < minTemp)
+                else if (currentTemp > maxTemp)
                 {
-                    violations.Add($"Нарушение: Температура {temperatures[i]}°C ниже минимальной ({minTemp}°C) на минуте {i * 10}.");
+                    int deviation = currentTemp - maxTemp;
+                    reportLines.Add($"{currentTime:dd.MM.yyyy HH:mm}\t{currentTemp}\t{maxTemp}\t{deviation}");
+                    totalMaxViolation += TimeSpan.FromMinutes(10);
                 }
             }
 
-            if (violations.Count > 0)
+            string report = "Отчет\n";
+            if (totalMinViolation.TotalMinutes > 0)
             {
-                report.AppendLine("Обнаружены нарушения условий хранения:");
-                foreach (var violation in violations)
-                {
-                    report.AppendLine(violation);
-                }
+                report += $"Порог минимально допустимой температуры превышен на {totalMinViolation.TotalMinutes} минут.\n\n";
             }
-            else
+            if (totalMaxViolation.TotalMinutes > 0)
             {
-                report.AppendLine("Условия хранения соблюдены.");
+                report += $"Порог максимальной допустимой температуры превышен на {totalMaxViolation.TotalMinutes} минут.\n\n";
             }
 
-            return report.ToString();
+            report += string.Join("\n", reportLines);
+
+            return report;
         }
     }
 }

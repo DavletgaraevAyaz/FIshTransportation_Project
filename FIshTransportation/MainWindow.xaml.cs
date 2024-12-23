@@ -18,8 +18,6 @@ namespace FIshTransportation
     /// </summary>
     public partial class MainWindow : Window
     {
-        private int transportTime; // Переменная для хранения времени перевозки
-
         public MainWindow()
         {
             InitializeComponent();
@@ -29,12 +27,14 @@ namespace FIshTransportation
         {
             try
             {
-                transportTime = int.Parse(TransportTimeTextBox.Text); // Сохраняем время перевозки
-                int minTemp = int.Parse(MinTempTextBox.Text);
                 int maxTemp = int.Parse(MaxTempTextBox.Text);
+                int maxTempDuration = int.Parse(MaxTempDurationTextBox.Text);
+                int minTemp = int.Parse(MinTempTextBox.Text);
+                int minTempDuration = int.Parse(MinTempDurationTextBox.Text);
                 var temperatures = TemperatureInputTextBox.Text.Split(',').Select(int.Parse).ToArray();
+                DateTime startTime = DateTime.Parse(StartTimeTextBox.Text);
 
-                var monitor = new TemperatureMonitor(transportTime, minTemp, maxTemp, temperatures);
+                var monitor = new TemperatureMonitor(startTime, minTemp, maxTemp, temperatures);
                 var report = monitor.CheckConditions();
 
                 ResultTextBlock.Text = report;
@@ -48,7 +48,7 @@ namespace FIshTransportation
 
         private void LoadFromFileButton_Click(object sender, RoutedEventArgs e)
         {
-            var openFileDialog = new OpenFileDialog // Используем OpenFileDialog
+            var openFileDialog = new OpenFileDialog
             {
                 Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*"
             };
@@ -56,11 +56,8 @@ namespace FIshTransportation
             if (openFileDialog.ShowDialog() == true)
             {
                 var (startTime, temperatures) = DataLoader.LoadDataFromFile(openFileDialog.FileName);
-                // Установите время перевозки (например, можно установить его на основе времени доставки)
-                // Здесь можно добавить логику для определения времени перевозки
-                TransportTimeTextBox.Text = "0"; // Установите значение по умолчанию или определите его
-                TemperatureInputTextBox.Text = string.Join(", ", temperatures); // Установите температуры
-                // Можно добавить логику для установки минимальной и максимальной температуры
+                StartTimeTextBox.Text = startTime.ToString("dd.MM.yyyy HH:mm");
+                TemperatureInputTextBox.Text = string.Join(", ", temperatures);
             }
         }
 
@@ -71,12 +68,16 @@ namespace FIshTransportation
                 switch (selectedItem.Content.ToString())
                 {
                     case "Семга":
-                        MinTempTextBox.Text = "-3"; // Минимальная температура для семги
-                        MaxTempTextBox.Text = "5";   // Максимальная температура для семги
+                        MinTempTextBox.Text = "-3"; 
+                        MaxTempTextBox.Text = "5";  
+                        MinTempDurationTextBox.Text = "60";
+                        MaxTempDurationTextBox.Text = "20"; 
                         break;
                     case "Минтай":
-                        MinTempTextBox.Text = "-10"; // Минимальная температура для минтая
-                        MaxTempTextBox.Text = "-5";   // Максимальная температура для минтая
+                        MinTempTextBox.Text = "-10"; 
+                        MaxTempTextBox.Text = "-5";   
+                        MinTempDurationTextBox.Text = "0"; 
+                        MaxTempDurationTextBox.Text = "120"; 
                         break;
                 }
             }
@@ -91,42 +92,18 @@ namespace FIshTransportation
 
         private void NumericTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            // Проверка, что вводимое значение является числом
             e.Handled = !IsTextAllowed(e.Text);
         }
 
         private bool IsTextAllowed(string text)
         {
-            // Регулярное выражение для проверки, что текст состоит только из цифр
             Regex regex = new Regex("[^0-9]+");
             return !regex.IsMatch(text);
         }
 
-        private void TransportTimeTextBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (int.TryParse(TransportTimeTextBox.Text, out int value))
-            {
-                if (value < 3 || value > 9)
-                {
-                    MessageBox.Show("Срок доставки должен быть от 3 до 9 часов.", "Ошибка ввода", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-        }
-
-        private void MinTempTextBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (int.TryParse(MinTempTextBox.Text, out int value))
-            {
-                // Здесь можно добавить дополнительные проверки для минимальной температуры, если необходимо
-            }
-        }
-
-        private void MaxTempTextBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (int.TryParse(MaxTempTextBox.Text, out int value))
-            {
-                // Здесь можно добавить дополнительные проверки для максимальной температуры, если необходимо
-            }
-        }
+        private void MinTempTextBox_LostFocus(object sender, RoutedEventArgs e) {  }
+        private void MaxTempTextBox_LostFocus(object sender, RoutedEventArgs e) {  }
+        private void MinTempDurationTextBox_LostFocus(object sender, RoutedEventArgs e) {  }
+        private void MaxTempDurationTextBox_LostFocus(object sender, RoutedEventArgs e) {  }
     }
 }
