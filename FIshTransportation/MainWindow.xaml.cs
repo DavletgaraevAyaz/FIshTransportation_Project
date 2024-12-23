@@ -105,5 +105,15 @@ namespace FIshTransportation
         private void MaxTempTextBox_LostFocus(object sender, RoutedEventArgs e) {  }
         private void MinTempDurationTextBox_LostFocus(object sender, RoutedEventArgs e) {  }
         private void MaxTempDurationTextBox_LostFocus(object sender, RoutedEventArgs e) {  }
+        private void Temperature_LostFocus(object sender, RoutedEventArgs e) 
+        {
+            if (int.TryParse(TemperatureInputTextBox.Text, out int value))
+            {
+                if (value < 18 || value > 54)
+                {
+                    MessageBox.Show("Значения температуры от 18 до 54.", "Ошибка ввода", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+        }
     }
 }
